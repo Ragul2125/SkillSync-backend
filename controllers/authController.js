@@ -3,7 +3,6 @@ import asyncHandler from "../utils/asyncHandler.js";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 
-// SIGNUP
 export const signup = asyncHandler(async (req, res, next) => {
   const { name, email, password } = req.body;
 
@@ -34,7 +33,6 @@ export const signup = asyncHandler(async (req, res, next) => {
   });
 });
 
-// LOGIN
 export const login = asyncHandler(async (req, res, next) => {
   const { email, password } = req.body;
 

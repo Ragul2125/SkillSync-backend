@@ -11,7 +11,6 @@ import { generateMatchReasoning } from "../backend_rag_utils/matchReasoning.js";
 export const getAiMatchedDevsWithReasoning = asyncHandler(async (req, res, next) => {
     const userId = req.user._id;
 
-    // Get current user's profile with embedding
     const user = await User.findById(userId);
 
     if (!user) {
@@ -26,14 +25,12 @@ export const getAiMatchedDevsWithReasoning = asyncHandler(async (req, res, next)
         return next(error);
     }
 
-    // Perform vector search to find similar developers
     const similarDevelopers = await searchSimilarDocuments(
         User,
         user.description_embedding,
         10
     );
 
-    // Filter out the current user from results
     const filteredDevelopers = similarDevelopers.filter(
         (dev) => dev._id.toString() !== userId.toString()
     );
@@ -46,7 +43,6 @@ export const getAiMatchedDevsWithReasoning = asyncHandler(async (req, res, next)
         });
     }
 
-    // Generate AI reasoning for matches using Gemini
     const ragResponse = await generateMatchReasoning(user, filteredDevelopers);
 
     res.status(200).json({
@@ -64,7 +60,6 @@ export const getAiMatchedDevsWithReasoning = asyncHandler(async (req, res, next)
 export const getAiMatchedProjectsWithReasoning = asyncHandler(async (req, res, next) => {
     const userId = req.user._id;
 
-    // Get current user's profile with embedding
     const user = await User.findById(userId);
 
     if (!user) {
@@ -79,14 +74,12 @@ export const getAiMatchedProjectsWithReasoning = asyncHandler(async (req, res, n
         return next(error);
     }
 
-    // Perform vector search to find similar projects
     const similarProjects = await searchSimilarDocuments(
         Project,
         user.description_embedding,
         10
     );
 
-    // Filter out projects created by the current user
     const filteredProjects = similarProjects.filter(
         (project) => project.createdById?.toString() !== userId.toString()
     );
@@ -99,7 +92,6 @@ export const getAiMatchedProjectsWithReasoning = asyncHandler(async (req, res, n
         });
     }
 
-    // Generate AI reasoning for matches using Gemini
     const ragResponse = await generateMatchReasoning(user, filteredProjects);
 
     res.status(200).json({

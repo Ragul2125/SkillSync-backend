@@ -22,7 +22,6 @@ export const createProject = asyncHandler(async (req, res, next) => {
     return next(error);
   }
 
-  // Generate embedding for project
   const techStack = req.body.techStack || [];
   const textToEmbed = `${name} ${description} ${Array.isArray(techStack) ? techStack.join(" ") : techStack}`;
   const embedding = await generateEmbedding(textToEmbed);
@@ -39,7 +38,6 @@ export const createProject = asyncHandler(async (req, res, next) => {
   user.projects.push(project._id);
   await user.save();
 
-  // Trigger background match computation for this project (non-blocking)
   setImmediate(() => {
     computeMatchesForProject(project._id.toString()).catch(err =>
       console.error("Background project match computation error:", err)

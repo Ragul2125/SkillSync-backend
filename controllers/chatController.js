@@ -1,7 +1,6 @@
 import Message from "../model/Message.js"
 import Conversation from "../model/Conversation.js"
 
-// Get or Create a conversation between two users
 export const getOrCreateConversation = async (req, res) => {
   try {
     const { senderId, receiverId } = req.body;
@@ -22,27 +21,21 @@ export const getOrCreateConversation = async (req, res) => {
   }
 };
 
-// Send a message
 export const sendMessage = async (req, res) => {
   try {
     const { conversationId, senderId, content } = req.body;
 
-    // Create new message
     const newMessage = await Message.create({
       conversationId,
       sender: senderId,
       content,
     });
 
-    // Update conversation with last message
     await Conversation.findByIdAndUpdate(conversationId, {
       lastMessage: newMessage._id,
       updatedAt: new Date(),
     });
 
-    // Emit socket event (if socket.io instance is available via req.app or global)
-    // const io = req.app.get('io');
-    // io.to(conversationId).emit('newMessage', newMessage);
 
     res.status(201).json(newMessage);
   } catch (error) {
@@ -50,7 +43,6 @@ export const sendMessage = async (req, res) => {
   }
 };
 
-// Get messages for a conversation
 export const getMessages = async (req, res) => {
   try {
     const { conversationId } = req.params;
@@ -64,7 +56,6 @@ export const getMessages = async (req, res) => {
   }
 };
 
-// Get all conversations for a user
 export const getUserConversations = async (req, res) => {
   try {
     const { userId } = req.params;

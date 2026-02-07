@@ -1,11 +1,6 @@
 import Notification from "../model/notificationModel.js";
 import asyncHandler from "../utils/asyncHandler.js";
 
-/**
- * Get user's notifications
- * GET /api/notifications
- * Query params: ?unreadOnly=true
- */
 export const getNotifications = asyncHandler(async (req, res, next) => {
     const userId = req.user._id;
     const { unreadOnly } = req.query;
@@ -32,10 +27,6 @@ export const getNotifications = asyncHandler(async (req, res, next) => {
     });
 });
 
-/**
- * Get unread notification count
- * GET /api/notifications/unread-count
- */
 export const getUnreadCount = asyncHandler(async (req, res, next) => {
     const userId = req.user._id;
 
@@ -50,10 +41,6 @@ export const getUnreadCount = asyncHandler(async (req, res, next) => {
     });
 });
 
-/**
- * Mark notification as read
- * PATCH /api/notifications/:id/read
- */
 export const markAsRead = asyncHandler(async (req, res, next) => {
     const { id } = req.params;
     const userId = req.user._id;
@@ -76,10 +63,6 @@ export const markAsRead = asyncHandler(async (req, res, next) => {
     });
 });
 
-/**
- * Mark all notifications as read
- * PATCH /api/notifications/read-all
- */
 export const markAllAsRead = asyncHandler(async (req, res, next) => {
     const userId = req.user._id;
 

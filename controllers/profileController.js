@@ -20,7 +20,6 @@ export const completeProfile = asyncHandler(async (req, res, next) => {
     return next(error);
   }
 
-  // Generate embedding for profile
   const textToEmbed = `${title} ${bio} ${Array.isArray(skills) ? skills.join(" ") : skills} ${experience} years experience`;
   const embedding = await generateEmbedding(textToEmbed);
 
@@ -30,7 +29,6 @@ export const completeProfile = asyncHandler(async (req, res, next) => {
     { new: true, runValidators: true },
   );
 
-  // Trigger background match computation (non-blocking)
   setImmediate(() => {
     computeMatchesForUser(user._id.toString()).catch(err =>
       console.error("Background match computation error:", err)
@@ -50,7 +48,6 @@ export const completeProfile = asyncHandler(async (req, res, next) => {
 export const getProfile = asyncHandler(async (req, res, next) => {
   const { userId } = req.params;
 
-  // Validate MongoDB ID
   if (!mongoose.Types.ObjectId.isValid(userId)) {
     const error = new Error("Invalid user ID");
     error.statusCode = 400;
@@ -80,7 +77,6 @@ export const getProfile = asyncHandler(async (req, res, next) => {
 export const editProfile = asyncHandler(async (req, res, next) => {
   const { title, experience, bio, skills } = req.body;
 
-  // Check if at least one field is provided
   if (!title && !experience && !bio && !skills) {
     const error = new Error("Provide at least one field to update");
     error.statusCode = 400;
@@ -96,14 +92,12 @@ export const editProfile = asyncHandler(async (req, res, next) => {
     return next(error);
   }
 
-  // Build update object dynamically (only sent fields get updated)
   const updateFields = {};
   if (title) updateFields.title = title;
   if (experience) updateFields.experience = experience;
   if (bio) updateFields.bio = bio;
   if (skills) updateFields.skills = skills;
 
-  // Regenerate embedding if profile-related fields are updated
   if (title || bio || skills || experience) {
     const updatedTitle = title || user.title || "";
     const updatedBio = bio || user.bio || "";
@@ -121,7 +115,6 @@ export const editProfile = asyncHandler(async (req, res, next) => {
     { new: true, runValidators: true }
   ).select("-password"); // never send password
 
-  // Trigger background match computation if embedding was updated (non-blocking)
   if (updateFields.description_embedding) {
     setImmediate(() => {
       computeMatchesForUser(userId.toString()).catch(err =>

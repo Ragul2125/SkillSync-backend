@@ -4,22 +4,16 @@ import Project from "../model/projectModel.js";
 import Match from "../model/matchModel.js";
 import asyncHandler from "../utils/asyncHandler.js";
 
-/**
- * Apply to a project
- * POST /api/applications/apply
- */
 export const applyToProject = asyncHandler(async (req, res, next) => {
     const { projectId, name, email, message } = req.body;
     const applicantId = req.user._id;
 
-    // Validate required fields
     if (!projectId || !name || !email || !message) {
         const error = new Error("All fields are required: projectId, name, email, message");
         error.statusCode = 400;
         return next(error);
     }
 
-    // Get project details
     const project = await Project.findById(projectId);
     if (!project) {
         const error = new Error("Project not found");
@@ -27,14 +21,12 @@ export const applyToProject = asyncHandler(async (req, res, next) => {
         return next(error);
     }
 
-    // Check if user is trying to apply to their own project
     if (project.createdById.toString() === applicantId.toString()) {
         const error = new Error("You cannot apply to your own project");
         error.statusCode = 400;
         return next(error);
     }
 
-    // Check if user has already applied
     const existingApplication = await Application.findOne({
         applicantId,
         projectId,
@@ -46,7 +38,6 @@ export const applyToProject = asyncHandler(async (req, res, next) => {
         return next(error);
     }
 
-    // Create application
     const application = await Application.create({
         applicantId,
         projectId,
@@ -56,7 +47,6 @@ export const applyToProject = asyncHandler(async (req, res, next) => {
         message,
     });
 
-    // Create notification for project owner
     await Notification.create({
         userId: project.createdById,
         type: "application",
@@ -73,10 +63,6 @@ export const applyToProject = asyncHandler(async (req, res, next) => {
     });
 });
 
-/**
- * Get user's applications
- * GET /api/applications/my-applications
- */
 export const getMyApplications = asyncHandler(async (req, res, next) => {
     const applicantId = req.user._id;
 
@@ -92,10 +78,6 @@ export const getMyApplications = asyncHandler(async (req, res, next) => {
     });
 });
 
-/**
- * Get applications for a project (project owner only)
- * GET /api/applications/project/:projectId
- */
 export const getProjectApplications = asyncHandler(async (req, res, next) => {
     const { projectId } = req.params;
     const userId = req.user._id;
@@ -125,23 +107,17 @@ export const getProjectApplications = asyncHandler(async (req, res, next) => {
     });
 });
 
-/**
- * Update application status (project owner only)
- * PATCH /api/applications/:id/status
- */
 export const updateApplicationStatus = asyncHandler(async (req, res, next) => {
     const { id } = req.params;
     const { status, role } = req.body;
     const userId = req.user._id;
 
-    // Validate status
     if (!["accepted", "rejected"].includes(status)) {
         const error = new Error("Invalid status. Must be 'accepted' or 'rejected'");
         error.statusCode = 400;
         return next(error);
     }
 
-    // Get application with project details
     const application = await Application.findById(id).populate("projectId", "name teamMembers");
     if (!application) {
         const error = new Error("Application not found");
@@ -156,12 +132,10 @@ export const updateApplicationStatus = asyncHandler(async (req, res, next) => {
         return next(error);
     }
 
-    // Update application
     application.status = status;
     application.respondedAt = new Date();
     await application.save();
 
-    // If accepted, add developer to project team
     if (status === "accepted") {
         console.log(`🔍 Application accepted, adding developer to team...`);
         console.log(`📋 Application ID: ${application._id}`);
@@ -177,7 +151,6 @@ export const updateApplicationStatus = asyncHandler(async (req, res, next) => {
         }
 
 
-        // Check if user is already in team
         const alreadyInTeam = project.teamMembers.some(
             member => member.user.toString() === application.applicantId.toString()
         );
@@ -191,7 +164,6 @@ export const updateApplicationStatus = asyncHandler(async (req, res, next) => {
             await project.save();
         }
 
-        // Update related Match status if exists
         const matchUpdateResult = await Match.updateMany(
             {
                 userId: application.projectOwnerId,
@@ -205,7 +177,6 @@ export const updateApplicationStatus = asyncHandler(async (req, res, next) => {
         );
     }
 
-    // Create notification for applicant
     await Notification.create({
         userId: application.applicantId,
         type: "application_response",

@@ -59,7 +59,6 @@ export const getAiMatchedProjects = asyncHandler(async (req, res, next) => {
     });
   }
 
-  // Check if user has applied to each project
   const projectIds = projects.map(p => p.matchedProjectId?._id).filter(Boolean);
   const applications = await Application.find({
     applicantId: userId,
@@ -72,7 +71,6 @@ export const getAiMatchedProjects = asyncHandler(async (req, res, next) => {
     applicationMap[app.projectId.toString()] = app.status;
   });
 
-  // Add hasApplied and applicationStatus to each project
   const projectsWithStatus = projects.map(match => {
     const projectId = match.matchedProjectId?._id?.toString();
     return {
