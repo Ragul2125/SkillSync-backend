@@ -1,6 +1,8 @@
 import User from "../model/userModel.js";
 import asyncHandler from "../utils/asyncHandler.js";
 import mongoose from "mongoose";
+import { generateEmbedding } from "../backend_rag_utils/embeddings.js";
+import { computeMatchesForUser } from "../services/ragService.js";
 
 export const completeProfile = asyncHandler(async (req, res, next) => {
   const { title, experience, bio, skills } = req.body;
@@ -18,11 +20,23 @@ export const completeProfile = asyncHandler(async (req, res, next) => {
     return next(error);
   }
 
+  // Generate embedding for profile
+  const textToEmbed = `${title} ${bio} ${Array.isArray(skills) ? skills.join(" ") : skills} ${experience} years experience`;
+  const embedding = await generateEmbedding(textToEmbed);
+
   const updatedUser = await User.findByIdAndUpdate(
     user._id,
-    { $set: req.body },
+    { $set: { ...req.body, description_embedding: embedding } },
     { new: true, runValidators: true },
   );
+
+  // Trigger background match computation (non-blocking)
+  setImmediate(() => {
+    computeMatchesForUser(user._id.toString()).catch(err =>
+      console.error("Background match computation error:", err)
+    );
+  });
+
   res.status(201).json({
     message: "User profile updated successfully",
     data: {
@@ -91,11 +105,32 @@ export const editProfile = asyncHandler(async (req, res, next) => {
   if (bio) updateFields.bio = bio;
   if (skills) updateFields.skills = skills;
 
+  // Regenerate embedding if profile-related fields are updated
+  if (title || bio || skills || experience) {
+    const updatedTitle = title || user.title || "";
+    const updatedBio = bio || user.bio || "";
+    const updatedSkills = skills || user.skills || [];
+    const updatedExperience = experience || user.experience || 0;
+
+    const textToEmbed = `${updatedTitle} ${updatedBio} ${Array.isArray(updatedSkills) ? updatedSkills.join(" ") : updatedSkills} ${updatedExperience} years experience`;
+    const embedding = await generateEmbedding(textToEmbed);
+    updateFields.description_embedding = embedding;
+  }
+
   const updatedUser = await User.findByIdAndUpdate(
     userId,
     { $set: updateFields },
     { new: true, runValidators: true }
   ).select("-password"); // never send password
+
+  // Trigger background match computation if embedding was updated (non-blocking)
+  if (updateFields.description_embedding) {
+    setImmediate(() => {
+      computeMatchesForUser(userId.toString()).catch(err =>
+        console.error("Background match computation error:", err)
+      );
+    });
+  }
 
   res.status(200).json({
     message: "Profile updated successfully",

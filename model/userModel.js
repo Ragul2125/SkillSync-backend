@@ -41,6 +41,12 @@ const userSchema = new mongoose.Schema(
       },
     ],
 
+    description_embedding: [
+      {
+        type: Number,
+      },
+    ],
+
     projects: [
       {
         type: mongoose.Schema.Types.ObjectId,

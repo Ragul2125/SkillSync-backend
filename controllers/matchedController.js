@@ -1,23 +1,28 @@
 import Match from "../model/matchModel.js";
 import Project from "../model/projectModel.js";
+import Application from "../model/applicationModel.js";
 import asyncHandler from "../utils/asyncHandler.js";
 
 export const getAiMatchedDev = asyncHandler(async (req, res, next) => {
   const userId = req.user._id;
-  
+
   if (!userId) {
     return next(new AppError("Unauthorized. Please login again.", 401));
   }
 
   const dev = await Match.find({
     userId,
-    $or: [{ matchedProjectId: { $exists: false } }, { matchedProjectId: null }],
-  }).populate("matchedUserId","name title bio skills").sort({ createdAt: -1 });
+    matchedType: "USER",
+  })
+    .populate("matchedUserId", "name title bio skills")
+    .populate("sourceProjectId", "name description techStack status") // Show which project they're matched for
+    .sort({ matchPercentage: -1, createdAt: -1 }); // Sort by match percentage first
 
+  console.log(dev);
   if (!dev.length) {
     return res.status(200).json({
       success: true,
-      message: "No AI matched developers found",
+      message: "No AI matched developers found. Complete your profile to get matches.",
       dev: [],
     });
   }
@@ -33,26 +38,55 @@ export const getAiMatchedProjects = asyncHandler(async (req, res, next) => {
   const userId = req.user?._id;
 
   if (!userId) {
-    return next(new AppError("Unauthorized. Please login again.", 401));
+    const error = new Error("Unauthorized. Please login again.");
+    error.statusCode = 401;
+    return next(error);
   }
 
   const projects = await Match.find({
     userId,
-    $or: [{ matchedUserId: { $exists: false } }, { matchedUserId: null }],
-  }).populate("matchedProjectId","name description techStack").sort({ createdAt: -1 });
+    matchedType: "PROJECT",
+  })
+    .populate("matchedProjectId", "name description techStack")
+    .sort({ matchPercentage: -1, createdAt: -1 });
+
+  console.log(projects);
 
   if (!projects.length) {
     return res.status(200).json({
       success: true,
-      message: "No AI matched projects found",
+      message: "No AI matched projects found. Complete your profile to get matches.",
       projects: [],
     });
   }
 
+  // Check if user has applied to each project
+  const projectIds = projects.map(p => p.matchedProjectId?._id).filter(Boolean);
+  const applications = await Application.find({
+    applicantId: userId,
+    projectId: { $in: projectIds }
+  }).select('projectId status');
+
+  // Create a map of projectId -> application status
+  const applicationMap = {};
+  applications.forEach(app => {
+    applicationMap[app.projectId.toString()] = app.status;
+  });
+
+  // Add hasApplied and applicationStatus to each project
+  const projectsWithStatus = projects.map(match => {
+    const projectId = match.matchedProjectId?._id?.toString();
+    return {
+      ...match.toObject(),
+      hasApplied: !!applicationMap[projectId],
+      applicationStatus: applicationMap[projectId] || null
+    };
+  });
+
   res.status(200).json({
     success: true,
-    count: projects.length,
-    projects,
+    count: projectsWithStatus.length,
+    projects: projectsWithStatus,
   });
 });
 

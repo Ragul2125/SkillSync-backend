@@ -54,6 +54,12 @@ const projectSchema = new mongoose.Schema(
       max: 100,
       default: 0,
     },
+
+    description_embedding: [
+      {
+        type: Number,
+      },
+    ],
   },
   { timestamps: true },
 );

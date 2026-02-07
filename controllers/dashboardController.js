@@ -39,40 +39,63 @@ export const getMyProjects = asyncHandler(async (req, res, next) => {
   });
 });
 
-export const getAiMatchedDev = asyncHandler(async (req, res, next) => {
+export const getAiMatchedDevsForDashboard = asyncHandler(async (req, res, next) => {
   const userId = req.user._id;
 
-  const dev_3 = await Match.find({
-    userId,
-    matchedProjectId: { $exists: false },
-  })
-    .sort({ createdAt: -1 })
-    .limit(3);
+  console.log(`🔍 Dashboard: Fetching developer matches for user: ${userId}`);
 
   const dev = await Match.find({
     userId,
-    matchedProjectId: { $exists: false },
+    matchedType: "USER",
   })
-    .sort({ createdAt: -1 })
-    .limit(3);
+    .populate("matchedUserId", "_id name title bio skills")
+    .populate("sourceProjectId", "name description techStack status") // Show which project they're matched for
+    .sort({ matchPercentage: -1, createdAt: -1 })
+    .limit(3) // Sort by match percentage first
+
+  console.log(`📊 Dashboard: Found ${dev.length} developer matches`);
+
+  if (!dev.length) {
+    return res.status(200).json({
+      success: true,
+      message: "No AI matched developers found. Complete your profile to get matches.",
+      dev: [],
+    });
+  }
 
   res.status(200).json({
-    dev_3,
+    success: true,
+    count: dev.length,
     dev,
   });
 });
 
-export const getAiMatchedProjects = asyncHandler(async (req, res, next) => {
+export const getAiMatchedProjectsForDashboard = asyncHandler(async (req, res, next) => {
   const userId = req.user._id;
+
+  console.log(`🔍 Dashboard: Fetching project matches for user: ${userId}`);
 
   const projects = await Match.find({
     userId,
-    matchedUserId: { $exists: false },
+    matchedType: "PROJECT",
   })
-    .sort({ createdAt: -1 })
+    .populate("matchedProjectId", "name description techStack")
+    .sort({ matchPercentage: -1, createdAt: -1 })
     .limit(3);
 
+  console.log(`📊 Dashboard: Found ${projects.length} project matches`);
+
+  if (!projects.length) {
+    return res.status(200).json({
+      success: true,
+      message: "No AI matched projects found. Complete your profile to get matches.",
+      projects: [],
+    });
+  }
+
   res.status(200).json({
+    success: true,
+    count: projects.length,
     projects,
   });
 });
@@ -81,7 +104,9 @@ export const getMyDevs = asyncHandler(async (req, res, next) => {
   const userId = req.user?._id;
 
   if (!userId) {
-    return next(new AppError("Unauthorized. Please login again.", 401));
+    const error = new Error("Unauthorized. Please login again.");
+    error.statusCode = 401;
+    return next(error);
   }
 
   const projects = await Project.find({ createdById: userId })

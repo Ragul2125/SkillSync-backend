@@ -2,7 +2,7 @@ import mongoose from "mongoose";
 
 const matchSchema = new mongoose.Schema(
   {
-    userId: { 
+    userId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
       required: true,
@@ -35,9 +35,26 @@ const matchSchema = new mongoose.Schema(
       max: 100,
       required: true,
     },
-    reason:{
+
+    matchPercentage: {
+      type: Number,
+      min: 0,
+      max: 100,
+    },
+
+    aiReasoning: {
+      type: String,
+    },
+
+    reason: {
       type: String
     },
+
+    lastComputedAt: {
+      type: Date,
+      default: Date.now,
+    },
+
     status: {
       type: String,
       enum: ["pending", "accepted", "rejected"],
