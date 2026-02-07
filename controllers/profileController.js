@@ -50,8 +50,6 @@ export const completeProfile = asyncHandler(async (req, res, next) => {
 export const getProfile = asyncHandler(async (req, res, next) => {
   const { userId } = req.params;
 
-  console.log("Fetching profile for userId:", userId);
-
   // Validate MongoDB ID
   if (!mongoose.Types.ObjectId.isValid(userId)) {
     const error = new Error("Invalid user ID");

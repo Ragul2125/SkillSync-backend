@@ -73,8 +73,6 @@ export const getAiMatchedDevsForDashboard = asyncHandler(async (req, res, next) 
 export const getAiMatchedProjectsForDashboard = asyncHandler(async (req, res, next) => {
   const userId = req.user._id;
 
-  console.log(`🔍 Dashboard: Fetching project matches for user: ${userId}`);
-
   const projects = await Match.find({
     userId,
     matchedType: "PROJECT",
@@ -82,8 +80,6 @@ export const getAiMatchedProjectsForDashboard = asyncHandler(async (req, res, ne
     .populate("matchedProjectId", "name description techStack")
     .sort({ matchPercentage: -1, createdAt: -1 })
     .limit(3);
-
-  console.log(`📊 Dashboard: Found ${projects.length} project matches`);
 
   if (!projects.length) {
     return res.status(200).json({

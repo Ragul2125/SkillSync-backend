@@ -18,7 +18,6 @@ export const getAiMatchedDev = asyncHandler(async (req, res, next) => {
     .populate("sourceProjectId", "name description techStack status") // Show which project they're matched for
     .sort({ matchPercentage: -1, createdAt: -1 }); // Sort by match percentage first
 
-  console.log(dev);
   if (!dev.length) {
     return res.status(200).json({
       success: true,

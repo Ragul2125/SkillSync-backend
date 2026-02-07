@@ -176,26 +176,19 @@ export const updateApplicationStatus = asyncHandler(async (req, res, next) => {
             return next(error);
         }
 
-        console.log(`📊 Current team members count: ${project.teamMembers.length}`);
-        console.log(`📊 Current team members:`, project.teamMembers);
 
         // Check if user is already in team
         const alreadyInTeam = project.teamMembers.some(
             member => member.user.toString() === application.applicantId.toString()
         );
 
-        console.log(`🔍 Already in team: ${alreadyInTeam}`);
 
         if (!alreadyInTeam) {
-            console.log(`➕ Adding developer with role: ${role || "Developer"}`);
             project.teamMembers.push({
                 user: application.applicantId,
                 role: role || "Developer",
             });
             await project.save();
-            console.log(`✅ Developer added! New team size: ${project.teamMembers.length}`);
-        } else {
-            console.log(`⚠️ Developer already in team, skipping...`);
         }
 
         // Update related Match status if exists
@@ -210,7 +203,6 @@ export const updateApplicationStatus = asyncHandler(async (req, res, next) => {
                 status: "accepted"
             }
         );
-        console.log(`📊 Updated ${matchUpdateResult.modifiedCount} match records`);
     }
 
     // Create notification for applicant
